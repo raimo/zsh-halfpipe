@@ -34,7 +34,7 @@ Clone the repo somewhere on your machine and source the script from `.zshrc`:
 
 ```zsh
 git clone https://github.com/raimo/zsh-halfpipe.git
-source /path/to/zsh-halfpipe/pipeline-preview.zsh
+source /path/to/zsh-halfpipe/halfpipe.zsh
 ```
 
 ### Antigen
@@ -71,7 +71,7 @@ Press `Ctrl-G`, then change `grep zsh` into `grep preview` or `wc -l` and watch 
 Syntax-check the script with:
 
 ```zsh
-zsh -n pipeline-preview.zsh
+zsh -n halfpipe.zsh
 ```
 
 Run the plugin test suite with:

@@ -6,9 +6,9 @@ SCRIPT_DIR="${0:A:h}"
 ROOT_DIR="${SCRIPT_DIR:h}"
 
 source "${SCRIPT_DIR}/test_helper.zsh"
-source "${SCRIPT_DIR}/pipeline-preview.test.zsh"
+source "${SCRIPT_DIR}/halfpipe.test.zsh"
 
-zsh -n "${ROOT_DIR}/pipeline-preview.zsh"
+zsh -n "${ROOT_DIR}/halfpipe.zsh"
 test::pass "syntax check passes"
 
 test_reset_restores_full_buffer

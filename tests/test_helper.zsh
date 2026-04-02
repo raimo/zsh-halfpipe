@@ -37,7 +37,7 @@ function bindkey() {
 
 test::load_plugin() {
   test::reset_stubs
-  source "${PIPELINE_PREVIEW_PLUGIN:-${ROOT_DIR}/pipeline-preview.zsh}"
+  source "${HALFPIPE_PLUGIN:-${ROOT_DIR}/halfpipe.zsh}"
 }
 
 test::set_binding() {

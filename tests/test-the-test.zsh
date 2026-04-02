@@ -16,11 +16,11 @@ run_mutant() {
   local output=''
   local exit_code=0
 
-  mutant_file=$(mktemp -t pipeline-preview-mutant)
-  cp "${ROOT_DIR}/pipeline-preview.zsh" "$mutant_file"
+  mutant_file=$(mktemp -t halfpipe-mutant)
+  cp "${ROOT_DIR}/halfpipe.zsh" "$mutant_file"
   perl -0pi -e "$perl_expr" "$mutant_file"
 
-  output=$(PIPELINE_PREVIEW_PLUGIN="$mutant_file" zsh "${SCRIPT_DIR}/run.zsh" 2>&1) || exit_code=$?
+  output=$(HALFPIPE_PLUGIN="$mutant_file" zsh "${SCRIPT_DIR}/run.zsh" 2>&1) || exit_code=$?
   rm -f "$mutant_file"
 
   mutants_run=$((mutants_run + 1))
@@ -45,7 +45,7 @@ run_mutant() {
 
 run_mutant \
   "send-break cleanup mutant is caught" \
-  's/pipeline-preview-reset ; zle \.\$cmd/zle .\$cmd/' \
+  's/halfpipe-reset ; zle \.\$cmd/zle .\$cmd/' \
   'not ok - send-break deactivates preview'
 
 run_mutant \
@@ -60,7 +60,7 @@ run_mutant \
 
 run_mutant \
   "session-prolog mutant is caught" \
-  's/prolog="\$\(pipeline-preview-shell-prolog\)"/prolog=""/' \
+  's/prolog="\$\(halfpipe-shell-prolog\)"/prolog=""/' \
   'not ok - alias-backed source command is available in preview shell'
 
 print -r -- ""
