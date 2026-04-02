@@ -71,4 +71,10 @@ Syntax-check the script with:
 zsh -n pipeline-preview.zsh
 ```
 
+Run the plugin test suite with:
+
+```zsh
+zsh tests/run.zsh
+```
+
 The repo intentionally keeps the implementation in a single file so it can be sourced directly by shell plugin managers.

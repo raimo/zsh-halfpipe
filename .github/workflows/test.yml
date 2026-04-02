@@ -1,0 +1,13 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  zsh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run plugin test suite
+        run: zsh tests/run.zsh
