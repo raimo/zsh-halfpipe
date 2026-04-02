@@ -3,6 +3,9 @@ function () {
     typeset -g _pipeline_preview_source_command_suffix="|"
     typeset -gi _pipeline_preview_activated=0
     typeset -g _pipeline_preview_cached_source_output=''
+    if [ "${$(bindkey '^G')#* }" = "pipeline-preview-toggle-live-output" ] && [ -n "$_pipeline_preview_original_ctrl_g_binding" ]; then
+      bindkey "^G" "$_pipeline_preview_original_ctrl_g_binding"
+    fi
     [ -n "$PREDISPLAY" ] && BUFFER="$PREDISPLAY$BUFFER"
     POSTDISPLAY=''
     PREDISPLAY=''
@@ -26,7 +29,10 @@ function () {
     [[ "$_pipeline_preview_activated" = "0" && "${BUFFER#*|}" = "$BUFFER" ]] && pipeline-preview-reset && return
 
     if [ "$_pipeline_preview_activated" = "0" ]; then
-      [ "${$(bindkey '^G')#* }" = "send-break" ] && bindkey "^G" pipeline-preview-toggle-live-output
+      if [ "${$(bindkey '^G')#* }" != "pipeline-preview-toggle-live-output" ]; then
+        typeset -g _pipeline_preview_original_ctrl_g_binding="${$(bindkey '^G')#* }"
+        bindkey "^G" pipeline-preview-toggle-live-output
+      fi
       POSTDISPLAY=$(printf "\nPress ^g to live-execute pipeline for cached result of %s" "${BUFFER%%|*}")
     elif [ "$_pipeline_preview_activated" = "1" ]; then
       POSTDISPLAY=$(
@@ -57,9 +63,8 @@ function () {
     eval "$cmd() { zle .$cmd ; pipeline-preview-reset } ; zle -N $cmd"
   done
 
-  # TODO: detect Ctrl-C cleanly and deactivate the preview state.
   for cmd in send-break; do
-    eval "$cmd() { printf '%s\n' raimo ; zle .$cmd } ; zle -N $cmd"
+    eval "$cmd() { pipeline-preview-reset ; zle .$cmd } ; zle -N $cmd"
   done
 
   zle -N read-command

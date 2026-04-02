@@ -13,9 +13,11 @@ test::pass "syntax check passes"
 
 test_reset_restores_full_buffer
 test_inactive_preview_shows_activation_hint
+test_reset_restores_original_ctrl_g_binding
 test_toggle_live_output_caches_left_hand_side
 test_live_preview_reacts_to_rhs_edits
 test_toggle_off_resets_preview_state
+test_send_break_cleans_up_preview_state
 test_no_pipe_resets_when_inactive
 
 print -r -- ""

@@ -31,6 +31,19 @@ test_inactive_preview_shows_activation_hint() {
   test::assert_eq "inactive preview highlights source segment" "P0 0 fg=cyan,bold" "${region_highlight[1]}"
 }
 
+test_reset_restores_original_ctrl_g_binding() {
+  test::load_plugin
+
+  __bindkey_query_result='^G some-widget'
+  BUFFER='echo hi | wc -c'
+  pipeline-preview-react-to-keypress
+  pipeline-preview-reset
+
+  local -a expected_bindkey_calls=('^G:pipeline-preview-toggle-live-output' '^G:some-widget')
+
+  test::assert_array_eq "reset restores prior ctrl-g binding" expected_bindkey_calls __bindkey_set_calls
+}
+
 test_toggle_live_output_caches_left_hand_side() {
   test::load_plugin
 
@@ -68,6 +81,25 @@ test_toggle_off_resets_preview_state() {
   test::assert_eq "second toggle restores original pipeline" $'printf \'foo\\nbar\\n\' | grep bar' "$BUFFER"
   test::assert_eq "second toggle clears postdisplay" "" "$POSTDISPLAY"
   test::assert_eq "second toggle clears predisplay" "" "$PREDISPLAY"
+}
+
+test_send_break_cleans_up_preview_state() {
+  test::load_plugin
+
+  __bindkey_query_result='^G some-widget'
+  BUFFER=$'printf \'foo\\nbar\\n\' | grep bar'
+  pipeline-preview-react-to-keypress
+  pipeline-preview-toggle-live-output
+  send-break
+
+  local -a expected_bindkey_calls=('^G:pipeline-preview-toggle-live-output' '^G:some-widget')
+
+  test::assert_eq "send-break deactivates preview" "0" "$_pipeline_preview_activated"
+  test::assert_eq "send-break restores original buffer" $'printf \'foo\\nbar\\n\' | grep bar' "$BUFFER"
+  test::assert_eq "send-break clears preview output" "" "$POSTDISPLAY"
+  test::assert_eq "send-break clears predisplay" "" "$PREDISPLAY"
+  test::assert_array_eq "send-break restores original ctrl-g binding" expected_bindkey_calls __bindkey_set_calls
+  test::assert_contains "send-break delegates to underlying zle widget" "${(j:|:)__zle_calls}" ".send-break"
 }
 
 test_no_pipe_resets_when_inactive() {

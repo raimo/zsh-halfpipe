@@ -22,7 +22,7 @@ This repository preserves the current prototype as a standalone plugin repo. It 
 
 - It only understands the first pipe character.
 - It uses `eval`, so it should be treated as trusted-local-shell code only.
-- Ctrl-C cleanup is still incomplete.
+- It temporarily takes over `Ctrl-G` while a previewable pipeline is on the command line, then restores the previous binding when preview mode exits.
 - Command output is cached only when live mode is first enabled.
 
 ## Installation
