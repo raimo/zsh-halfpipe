@@ -1,30 +1,23 @@
 # zsh-halfpipe
 
-`zsh-halfpipe` is an experimental Zsh widget that lets you preview the final stage of a pipeline against a cached snapshot of the earlier pipeline stages.
-
-When the widget is active, you can type a command such as:
+Press `Ctrl-G` on any pipeline and the output updates live as you edit the last command.
 
 ```zsh
 git status | grep modified
 ```
 
-Press `Ctrl-G` while the cursor is on the command line:
+Hit `Ctrl-G`. Now change `grep modified` to anything — `grep deleted`, `wc -l`, `awk '{print $2}'` — and see the result instantly. The left side runs once; you iterate on the right.
 
-- Everything before the last unquoted `|` is executed once and cached.
-- The command after the last unquoted `|` is re-run on each edit using the cached output.
-- The source command is shown in cyan in the prompt predisplay.
-- Press `Ctrl-X Ctrl-G` while preview mode is active to refresh the cached source output.
+- The upstream command is cached on activation and shown in cyan.
+- Press `Ctrl-X Ctrl-G` to re-run the upstream and refresh the cache.
+- Press `Ctrl-G` again to exit. Press `Enter` to run the final command normally.
 
-This gives you a fast feedback loop while refining filters like `grep`, `sed`, `awk`, or `jq`.
+## How it works
 
-## Status
-
-This repository preserves the current prototype as a standalone plugin repo. It is useful for experimentation, but it still has rough edges:
-
-- Preview commands run in a `zsh -fc` subprocess that is hydrated with your current aliases and functions.
-- It temporarily takes over `Ctrl-G` while a previewable pipeline is on the command line, then restores the previous binding when preview mode exits.
-- It temporarily binds `Ctrl-X Ctrl-G` while preview mode is active so you can refresh the cached upstream output.
-- Command output is cached only when live mode is first enabled.
+- Preview commands run in a `zsh -fc` subprocess hydrated with your current aliases and functions.
+- `Ctrl-G` is borrowed while a pipeline is on the command line and restored when you exit.
+- `Ctrl-X Ctrl-G` is bound while preview mode is active and released on exit.
+- Output is cached when you first activate preview. Use `Ctrl-X Ctrl-G` to refresh it.
 
 ## Installation
 
@@ -48,23 +41,6 @@ antigen bundle raimo/zsh-halfpipe
 ```zsh
 zinit light raimo/zsh-halfpipe
 ```
-
-## Usage
-
-1. Type a pipeline with at least one unquoted `|`.
-2. Press `Ctrl-G` to enable live preview.
-3. Edit the final pipeline stage.
-4. Press `Ctrl-X Ctrl-G` if you want to refresh the cached upstream output.
-5. Press `Ctrl-G` again to stop live preview.
-6. Press Enter to run the final command normally.
-
-Example:
-
-```zsh
-ls -1 | grep zsh
-```
-
-Press `Ctrl-G`, then change `grep zsh` into `grep preview` or `wc -l` and watch the preview refresh below the prompt.
 
 ## Development
 
