@@ -11,3 +11,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run plugin test suite
         run: zsh tests/run.zsh
+      - name: Mutation-check the test harness
+        run: zsh tests/test-the-test.zsh

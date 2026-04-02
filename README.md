@@ -1,6 +1,6 @@
 # pipeline-preview.zsh
 
-`pipeline-preview.zsh` is an experimental Zsh widget that lets you preview the right-hand side of a pipeline against a cached snapshot of the left-hand side command.
+`pipeline-preview.zsh` is an experimental Zsh widget that lets you preview the final stage of a pipeline against a cached snapshot of the earlier pipeline stages.
 
 When the widget is active, you can type a command such as:
 
@@ -10,9 +10,10 @@ git status | grep modified
 
 Press `Ctrl-G` while the cursor is on the command line:
 
-- The command before the first `|` is executed once and cached.
-- The command after the first `|` is re-run on each edit using the cached output.
+- Everything before the last unquoted `|` is executed once and cached.
+- The command after the last unquoted `|` is re-run on each edit using the cached output.
 - The source command is shown in cyan in the prompt predisplay.
+- Press `Ctrl-X Ctrl-G` while preview mode is active to refresh the cached source output.
 
 This gives you a fast feedback loop while refining filters like `grep`, `sed`, `awk`, or `jq`.
 
@@ -20,9 +21,9 @@ This gives you a fast feedback loop while refining filters like `grep`, `sed`, `
 
 This repository preserves the current prototype as a standalone plugin repo. It is useful for experimentation, but it still has rough edges:
 
-- It only understands the first pipe character.
-- It uses `eval`, so it should be treated as trusted-local-shell code only.
+- Preview commands run in a `zsh -fc` subprocess that is hydrated with your current aliases and functions.
 - It temporarily takes over `Ctrl-G` while a previewable pipeline is on the command line, then restores the previous binding when preview mode exits.
+- It temporarily binds `Ctrl-X Ctrl-G` while preview mode is active so you can refresh the cached upstream output.
 - Command output is cached only when live mode is first enabled.
 
 ## Installation
@@ -49,11 +50,12 @@ zinit light <your-user>/pipeline-preview-zsh
 
 ## Usage
 
-1. Type a pipeline with at least one `|`.
+1. Type a pipeline with at least one unquoted `|`.
 2. Press `Ctrl-G` to enable live preview.
-3. Edit the right-hand side of the pipeline.
-4. Press `Ctrl-G` again to stop live preview.
-5. Press Enter to run the final command normally.
+3. Edit the final pipeline stage.
+4. Press `Ctrl-X Ctrl-G` if you want to refresh the cached upstream output.
+5. Press `Ctrl-G` again to stop live preview.
+6. Press Enter to run the final command normally.
 
 Example:
 
@@ -75,6 +77,12 @@ Run the plugin test suite with:
 
 ```zsh
 zsh tests/run.zsh
+```
+
+Mutation-check the test harness with:
+
+```zsh
+zsh tests/test-the-test.zsh
 ```
 
 The repo intentionally keeps the implementation in a single file so it can be sourced directly by shell plugin managers.

@@ -1,11 +1,88 @@
 function () {
+  pipeline-preview-bind-temporary() {
+    local key_sequence="$1"
+    local widget_name="$2"
+    local storage_var="$3"
+    local current_binding="${$(bindkey "$key_sequence")#* }"
+
+    if [ "$current_binding" != "$widget_name" ]; then
+      typeset -g $storage_var="$current_binding"
+      bindkey "$key_sequence" "$widget_name"
+    fi
+  }
+
+  pipeline-preview-restore-binding() {
+    local key_sequence="$1"
+    local widget_name="$2"
+    local storage_var="$3"
+    local current_binding="${$(bindkey "$key_sequence")#* }"
+    local original_binding="${(P)storage_var}"
+
+    if [ "$current_binding" = "$widget_name" ] && [ -n "$original_binding" ]; then
+      bindkey "$key_sequence" "$original_binding"
+    fi
+
+    typeset -g $storage_var=''
+  }
+
+  pipeline-preview-capture-command-output() {
+    local command_text="$1"
+    local target_var="$2"
+
+    IFS= read -r -d $'\0' "$target_var" < <(
+      {
+        pipeline-preview-run-in-subshell "$command_text"
+        printf '\0'
+      }
+    )
+  }
+
+  pipeline-preview-shell-prolog() {
+    printf '%s\n' "$(alias -L)"
+    functions
+  }
+
+  pipeline-preview-run-in-subshell() {
+    local command_text="$1"
+    local prolog=''
+
+    prolog="$(pipeline-preview-shell-prolog)"
+    command zsh -fc "$prolog
+eval \"\$1\"" _ "$command_text" 2>&1
+  }
+
+  pipeline-preview-parse-buffer() {
+    local buffer_text="$1"
+    local -a tokens
+    local -a source_tokens
+    local -a preview_tokens
+    local last_pipe_index=0
+    local idx=0
+
+    tokens=(${(z)buffer_text})
+
+    for idx in {1..${#tokens}}; do
+      [ "${tokens[$idx]}" = "|" ] && last_pipe_index=$idx
+    done
+
+    if [ "$last_pipe_index" -eq 0 ] || [ "$last_pipe_index" -eq 1 ] || [ "$last_pipe_index" -eq "${#tokens}" ]; then
+      return 1
+    fi
+
+    source_tokens=("${tokens[@][1,$((last_pipe_index - 1))]}")
+    preview_tokens=("${tokens[@][$((last_pipe_index + 1)),-1]}")
+
+    typeset -g _pipeline_preview_source_command="${(j: :)source_tokens}"
+    typeset -g _pipeline_preview_preview_command="${(j: :)preview_tokens}"
+  }
+
   pipeline-preview-reset() {
-    typeset -g _pipeline_preview_source_command_suffix="|"
     typeset -gi _pipeline_preview_activated=0
     typeset -g _pipeline_preview_cached_source_output=''
-    if [ "${$(bindkey '^G')#* }" = "pipeline-preview-toggle-live-output" ] && [ -n "$_pipeline_preview_original_ctrl_g_binding" ]; then
-      bindkey "^G" "$_pipeline_preview_original_ctrl_g_binding"
-    fi
+    typeset -g _pipeline_preview_source_command=''
+    typeset -g _pipeline_preview_preview_command=''
+    pipeline-preview-restore-binding "^G" pipeline-preview-toggle-live-output _pipeline_preview_original_ctrl_g_binding
+    pipeline-preview-restore-binding "^X^G" pipeline-preview-refresh-source-output _pipeline_preview_original_refresh_binding
     [ -n "$PREDISPLAY" ] && BUFFER="$PREDISPLAY$BUFFER"
     POSTDISPLAY=''
     PREDISPLAY=''
@@ -13,31 +90,51 @@ function () {
   }
   pipeline-preview-reset
 
-  pipeline-preview-toggle-live-output() {
-    _pipeline_preview_activated=$((($_pipeline_preview_activated + 1) % 2))
+  pipeline-preview-refresh-source-output() {
+    [ "$_pipeline_preview_activated" = "1" ] || return
 
+    pipeline-preview-capture-command-output "$_pipeline_preview_source_command" _pipeline_preview_cached_source_output
+    pipeline-preview-react-to-keypress
+  }
+
+  pipeline-preview-toggle-live-output() {
     if [ "$_pipeline_preview_activated" = "1" ]; then
-      eval "${BUFFER%%|*}" | IFS= read -r -d $'\0' _pipeline_preview_cached_source_output
-      PREDISPLAY=$(printf "%s|" "${BUFFER%%|*}")
-      BUFFER="${BUFFER#*|}"
+      pipeline-preview-reset
+      return
     fi
 
+    if ! pipeline-preview-parse-buffer "$BUFFER"; then
+      pipeline-preview-reset
+      return
+    fi
+
+    _pipeline_preview_activated=1
+    pipeline-preview-capture-command-output "$_pipeline_preview_source_command" _pipeline_preview_cached_source_output
+    PREDISPLAY=$(printf "%s | " "$_pipeline_preview_source_command")
+    BUFFER="$_pipeline_preview_preview_command"
+    pipeline-preview-bind-temporary "^X^G" pipeline-preview-refresh-source-output _pipeline_preview_original_refresh_binding
     pipeline-preview-react-to-keypress
   }
 
   pipeline-preview-react-to-keypress() {
-    [[ "$_pipeline_preview_activated" = "0" && "${BUFFER#*|}" = "$BUFFER" ]] && pipeline-preview-reset && return
-
     if [ "$_pipeline_preview_activated" = "0" ]; then
-      if [ "${$(bindkey '^G')#* }" != "pipeline-preview-toggle-live-output" ]; then
-        typeset -g _pipeline_preview_original_ctrl_g_binding="${$(bindkey '^G')#* }"
-        bindkey "^G" pipeline-preview-toggle-live-output
+      if ! pipeline-preview-parse-buffer "$BUFFER"; then
+        pipeline-preview-reset
+        return
       fi
-      POSTDISPLAY=$(printf "\nPress ^g to live-execute pipeline for cached result of %s" "${BUFFER%%|*}")
+
+      pipeline-preview-bind-temporary "^G" pipeline-preview-toggle-live-output _pipeline_preview_original_ctrl_g_binding
+      POSTDISPLAY=$(printf "\nPress ^g to live-execute the cached result of %s" "$_pipeline_preview_source_command")
     elif [ "$_pipeline_preview_activated" = "1" ]; then
-      POSTDISPLAY=$(
-        printf "\n%s" "$(printf '%s' "$_pipeline_preview_cached_source_output" | eval "$BUFFER" 2>&1)"
+      local preview_output=''
+
+      IFS= read -r -d $'\0' preview_output < <(
+        {
+          printf '%s' "$_pipeline_preview_cached_source_output" | pipeline-preview-run-in-subshell "$BUFFER"
+          printf '\0'
+        }
       )
+      POSTDISPLAY=$(printf "\n%s" "$preview_output")
     fi
 
     pipeline-preview-react-to-movement
@@ -69,6 +166,7 @@ function () {
 
   zle -N read-command
   zle -N pipeline-preview-toggle-live-output
+  zle -N pipeline-preview-refresh-source-output
   zle -N self-insert
   zle -N backward-delete-char
   zle -N accept-line

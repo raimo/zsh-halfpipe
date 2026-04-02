@@ -4,12 +4,15 @@ typeset -gi TESTS_RUN=0
 typeset -gi TESTS_FAILED=0
 typeset -ga __bindkey_set_calls=()
 typeset -ga __zle_calls=()
-typeset -g __bindkey_query_result='^G send-break'
+typeset -gA __bindkey_bindings=()
 
 test::reset_stubs() {
   __bindkey_set_calls=()
   __zle_calls=()
-  __bindkey_query_result='^G send-break'
+  __bindkey_bindings=(
+    '^G' 'send-break'
+    '^X^G' 'undefined-key'
+  )
 }
 
 function zle() {
@@ -18,14 +21,14 @@ function zle() {
 }
 
 function bindkey() {
-  if [[ "$#" -eq 1 && "$1" == '^G' ]]; then
-    print -r -- "$__bindkey_query_result"
+  if [[ "$#" -eq 1 ]]; then
+    print -r -- "$1 ${__bindkey_bindings[$1]:-undefined-key}"
     return 0
   fi
 
-  if [[ "$#" -eq 2 && "$1" == '^G' ]]; then
+  if [[ "$#" -eq 2 ]]; then
     __bindkey_set_calls+=("$1:$2")
-    __bindkey_query_result="^G $2"
+    __bindkey_bindings[$1]="$2"
     return 0
   fi
 
@@ -34,7 +37,11 @@ function bindkey() {
 
 test::load_plugin() {
   test::reset_stubs
-  source "${ROOT_DIR}/pipeline-preview.zsh"
+  source "${PIPELINE_PREVIEW_PLUGIN:-${ROOT_DIR}/pipeline-preview.zsh}"
+}
+
+test::set_binding() {
+  __bindkey_bindings[$1]="$2"
 }
 
 test::pass() {
@@ -88,5 +95,17 @@ test::assert_contains() {
     test::pass "$label"
   else
     test::fail "$label" "expected ${(qqq)haystack} to contain ${(qqq)needle}"
+  fi
+}
+
+test::assert_not_eq() {
+  local label="$1"
+  local unexpected="$2"
+  local actual="$3"
+
+  if [[ "$actual" != "$unexpected" ]]; then
+    test::pass "$label"
+  else
+    test::fail "$label" "did not expect: ${(qqq)unexpected}" "actual:         ${(qqq)actual}"
   fi
 }
