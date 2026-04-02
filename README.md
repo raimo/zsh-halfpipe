@@ -33,19 +33,20 @@ This repository preserves the current prototype as a standalone plugin repo. It 
 Clone the repo somewhere on your machine and source the script from `.zshrc`:
 
 ```zsh
-source /path/to/pipeline-preview.zsh
+git clone https://github.com/raimo/zsh-halfpipe.git
+source /path/to/zsh-halfpipe/pipeline-preview.zsh
 ```
 
 ### Antigen
 
 ```zsh
-antigen bundle <your-user>/zsh-halfpipe
+antigen bundle raimo/zsh-halfpipe
 ```
 
 ### zinit
 
 ```zsh
-zinit light <your-user>/zsh-halfpipe
+zinit light raimo/zsh-halfpipe
 ```
 
 ## Usage
