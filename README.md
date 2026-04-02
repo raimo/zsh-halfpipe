@@ -1,6 +1,6 @@
-# pipeline-preview.zsh
+# zsh-halfpipe
 
-`pipeline-preview.zsh` is an experimental Zsh widget that lets you preview the final stage of a pipeline against a cached snapshot of the earlier pipeline stages.
+`zsh-halfpipe` is an experimental Zsh widget that lets you preview the final stage of a pipeline against a cached snapshot of the earlier pipeline stages.
 
 When the widget is active, you can type a command such as:
 
@@ -39,13 +39,13 @@ source /path/to/pipeline-preview.zsh
 ### Antigen
 
 ```zsh
-antigen bundle <your-user>/pipeline-preview-zsh
+antigen bundle <your-user>/zsh-halfpipe
 ```
 
 ### zinit
 
 ```zsh
-zinit light <your-user>/pipeline-preview-zsh
+zinit light <your-user>/zsh-halfpipe
 ```
 
 ## Usage
