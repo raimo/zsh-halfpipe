@@ -3,10 +3,12 @@
 Press `Ctrl-G` on any pipeline and the output updates live as you edit the last command.
 
 ```zsh
-git status | grep modified
+git log --oneline | grep -E "fix"
 ```
 
-Hit `Ctrl-G`. Now change `grep modified` to anything — `grep deleted`, `wc -l`, `awk '{print $2}'` — and see the result instantly. The left side runs once; you iterate on the right.
+Hit `Ctrl-G`. Now refine the regex — change it to `"fix|feat"`, then `"^[a-f0-9]+ (fix|feat):"` — and see what matches instantly. The left side runs once; you iterate on the right without re-running `git log`.
+
+Great for getting a regular expression right without executing the full pipeline on every attempt.
 
 - The upstream command is cached on activation and shown in cyan.
 - Press `Ctrl-X Ctrl-G` to re-run the upstream and refresh the cache.
