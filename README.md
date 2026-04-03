@@ -23,26 +23,52 @@ Great for getting a regular expression right without executing the full pipeline
 
 ## Installation
 
-### Plain Zsh
+### Manual (recommended — no plugin manager required)
 
-Clone the repo somewhere on your machine and source the script from `.zshrc`:
+This works whether you're using plain Zsh, Oh My Zsh, or any other setup.
 
 ```zsh
-git clone https://github.com/raimo/zsh-halfpipe.git
-source /path/to/zsh-halfpipe/halfpipe.zsh
+mkdir -p ~/.local/share
+git clone https://github.com/raimo/zsh-halfpipe.git ~/.local/share/zsh-halfpipe
 ```
 
-### Antigen
+Then add this line to your ~/.zshrc:
+
+```zsh
+source ~/.local/share/zsh-halfpipe/halfpipe.zsh
+```
+
+### Oh My Zsh
+
+```zsh
+git clone https://github.com/raimo/zsh-halfpipe.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-halfpipe
+```
+
+Then add zsh-halfpipe to your plugins array in ~/.zshrc:
+
+```zsh
+plugins=(git zsh-halfpipe …)
+```
+
+### With plugin managers
+
+#### zinit
+
+```zsh
+zinit light raimo/zsh-halfpipe
+```
+
+#### Antigen
 
 ```zsh
 antigen bundle raimo/zsh-halfpipe
 ```
 
-### zinit
+#### Any other manager that can source a single .zsh file should work too (the repo is deliberately kept to one file for this reason).
 
-```zsh
-zinit light raimo/zsh-halfpipe
-```
+## Uninstallation
+
+Just remove the source line (or the plugin name from the plugins= array) and delete the cloned directory.
 
 ## Development
 
