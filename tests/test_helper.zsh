@@ -9,6 +9,7 @@ typeset -gA __bindkey_bindings=()
 test::reset_stubs() {
   __bindkey_set_calls=()
   __zle_calls=()
+  CURSOR=''
   __bindkey_bindings=(
     '^G' 'send-break'
     '^X^G' 'undefined-key'
