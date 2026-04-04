@@ -106,6 +106,18 @@ test_cursor_in_first_stage_does_not_activate_preview() {
   test::assert_eq "first stage cursor leaves buffer untouched" $'printf \'alpha\\nbeta\\n\' | grep a | grep -c .' "$BUFFER"
 }
 
+test_cursor_in_last_stage_freezes_up_to_last_pipe() {
+  test::load_plugin
+
+  BUFFER=$'printf \'alpha\\nbeta\\n\' | grep a | grep -c .'
+  CURSOR=${#BUFFER}
+  halfpipe-toggle-live-output
+
+  test::assert_eq "last stage cursor freezes up to last pipe" $'printf \'alpha\\nbeta\\n\' | grep a | ' "$PREDISPLAY"
+  test::assert_eq "last stage cursor keeps final command editable" "grep -c ." "$BUFFER"
+  test::assert_eq "last stage cursor preview output is correct" $'\n2' "$POSTDISPLAY"
+}
+
 test_quoted_pipe_does_not_split_pipeline() {
   test::load_plugin
 
