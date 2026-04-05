@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          node-version: '22'
       - name: Run plugin test suite
         run: zsh tests/run.zsh
       - name: Mutation-check the test harness
