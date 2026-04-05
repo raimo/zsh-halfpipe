@@ -16,7 +16,7 @@ run_mutant() {
   local output=''
   local exit_code=0
 
-  mutant_file=$(mktemp -t halfpipe-mutant)
+  mutant_file=$(mktemp "${TMPDIR:-/tmp}/halfpipe-mutant.XXXXXX")
   cp "${ROOT_DIR}/halfpipe.zsh" "$mutant_file"
   perl -0pi -e "$perl_expr" "$mutant_file"
 
