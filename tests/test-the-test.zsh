@@ -55,7 +55,7 @@ run_mutant \
 
 run_mutant \
   "first-pipe mutant is caught" \
-  's/\[ "\$\{tokens\[\$idx\]\}" = "\|" \] && last_pipe_index=\$idx/[ "\${tokens[\$idx]}" = "|" ] && [ "\$last_pipe_index" -eq 0 ] && last_pipe_index=\$idx/' \
+  's/\[ "\$seen_pipes" -eq "\$split_pipe_number" \]/[ "$seen_pipes" -eq 1 ]/' \
   'not ok - multi-stage source command includes earlier pipeline stages'
 
 run_mutant \
