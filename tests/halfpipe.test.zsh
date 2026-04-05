@@ -31,7 +31,7 @@ test_inactive_preview_shows_activation_hint() {
   local -a expected_bindkey_calls=('^G:halfpipe-toggle-live-output')
 
   test::assert_array_eq "inactive preview rebinds ctrl-g" expected_bindkey_calls __bindkey_set_calls
-  test::assert_contains "inactive preview shows activation hint" "$POSTDISPLAY" "Press ^g to live-execute the cached result of echo hi"
+  test::assert_contains "inactive preview shows activation hint" "$POSTDISPLAY" "Press ^g to freeze up to the pipe left of cursor and live-execute the cached result of echo hi"
   test::assert_eq "inactive preview highlights source segment" "P0 0 fg=cyan,bold" "${region_highlight[1]}"
 }
 
@@ -81,6 +81,41 @@ test_multi_stage_pipeline_uses_last_pipe() {
   test::assert_eq "multi-stage source command includes earlier pipeline stages" $'printf \'alpha\\nbeta\\n\' | grep a | ' "$PREDISPLAY"
   test::assert_eq "multi-stage preview keeps final command editable" "grep -c ." "$BUFFER"
   test::assert_eq "multi-stage preview uses cached upstream output" $'\n2' "$POSTDISPLAY"
+}
+
+test_cursor_position_selects_pipeline_split_point() {
+  test::load_plugin
+
+  BUFFER=$'printf \'alpha\\nbeta\\n\' | grep a | grep -c .'
+  CURSOR=30 # inside "grep a"
+  halfpipe-toggle-live-output
+
+  test::assert_eq "cursor split freezes only stages left of current segment" $'printf \'alpha\\nbeta\\n\' | ' "$PREDISPLAY"
+  test::assert_eq "cursor split keeps current and right stages editable" "grep a | grep -c ." "$BUFFER"
+  test::assert_eq "cursor split preview still executes full remaining pipeline" $'\n2' "$POSTDISPLAY"
+}
+
+test_cursor_in_first_stage_does_not_activate_preview() {
+  test::load_plugin
+
+  BUFFER=$'printf \'alpha\\nbeta\\n\' | grep a | grep -c .'
+  CURSOR=3
+  halfpipe-toggle-live-output
+
+  test::assert_eq "first stage cursor keeps preview off" "0" "$_halfpipe_activated"
+  test::assert_eq "first stage cursor leaves buffer untouched" $'printf \'alpha\\nbeta\\n\' | grep a | grep -c .' "$BUFFER"
+}
+
+test_cursor_in_last_stage_freezes_up_to_last_pipe() {
+  test::load_plugin
+
+  BUFFER=$'printf \'alpha\\nbeta\\n\' | grep a | grep -c .'
+  CURSOR=${#BUFFER}
+  halfpipe-toggle-live-output
+
+  test::assert_eq "last stage cursor freezes up to last pipe" $'printf \'alpha\\nbeta\\n\' | grep a | ' "$PREDISPLAY"
+  test::assert_eq "last stage cursor keeps final command editable" "grep -c ." "$BUFFER"
+  test::assert_eq "last stage cursor preview output is correct" $'\n2' "$POSTDISPLAY"
 }
 
 test_quoted_pipe_does_not_split_pipeline() {

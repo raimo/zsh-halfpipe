@@ -53,24 +53,58 @@ eval \"\$1\"" _ "$command_text" 2>&1
 
   halfpipe-parse-buffer() {
     local buffer_text="$1"
+    local cursor_pos="${2:--1}"
     local -a tokens
     local -a source_tokens
     local -a preview_tokens
-    local last_pipe_index=0
+    local -a left_tokens
+    local split_pipe_number=0
+    local split_pipe_index=0
+    local seen_pipes=0
     local idx=0
+    local left_text=''
+    local buffer_len=${#buffer_text}
 
     tokens=(${(z)buffer_text})
 
-    for idx in {1..${#tokens}}; do
-      [ "${tokens[$idx]}" = "|" ] && last_pipe_index=$idx
-    done
-
-    if [ "$last_pipe_index" -eq 0 ] || [ "$last_pipe_index" -eq 1 ] || [ "$last_pipe_index" -eq "${#tokens}" ]; then
+    if [ "${#tokens}" -eq 0 ]; then
       return 1
     fi
 
-    source_tokens=("${tokens[@][1,$((last_pipe_index - 1))]}")
-    preview_tokens=("${tokens[@][$((last_pipe_index + 1)),-1]}")
+    if [ "$cursor_pos" -lt 0 ] || [ "$cursor_pos" -gt "$buffer_len" ]; then
+      cursor_pos=$buffer_len
+    fi
+
+    if [ "$cursor_pos" -gt 0 ]; then
+      left_text="${buffer_text[1,$cursor_pos]}"
+    fi
+
+    left_tokens=(${(z)left_text})
+
+    for idx in {1..${#left_tokens}}; do
+      [ "${left_tokens[$idx]}" = "|" ] && split_pipe_number=$((split_pipe_number + 1))
+    done
+
+    if [ "$split_pipe_number" -eq 0 ]; then
+      return 1
+    fi
+
+    for idx in {1..${#tokens}}; do
+      if [ "${tokens[$idx]}" = "|" ]; then
+        seen_pipes=$((seen_pipes + 1))
+        if [ "$seen_pipes" -eq "$split_pipe_number" ]; then
+          split_pipe_index=$idx
+          break
+        fi
+      fi
+    done
+
+    if [ "$split_pipe_index" -eq 0 ] || [ "$split_pipe_index" -eq 1 ] || [ "$split_pipe_index" -eq "${#tokens}" ]; then
+      return 1
+    fi
+
+    source_tokens=("${tokens[@][1,$((split_pipe_index - 1))]}")
+    preview_tokens=("${tokens[@][$((split_pipe_index + 1)),-1]}")
 
     typeset -g _halfpipe_source_command="${(j: :)source_tokens}"
     typeset -g _halfpipe_preview_command="${(j: :)preview_tokens}"
@@ -103,7 +137,7 @@ eval \"\$1\"" _ "$command_text" 2>&1
       return
     fi
 
-    if ! halfpipe-parse-buffer "$BUFFER"; then
+    if ! halfpipe-parse-buffer "$BUFFER" "$CURSOR"; then
       halfpipe-reset
       return
     fi
@@ -118,13 +152,13 @@ eval \"\$1\"" _ "$command_text" 2>&1
 
   halfpipe-react-to-keypress() {
     if [ "$_halfpipe_activated" = "0" ]; then
-      if ! halfpipe-parse-buffer "$BUFFER"; then
+      if ! halfpipe-parse-buffer "$BUFFER" "$CURSOR"; then
         halfpipe-reset
         return
       fi
 
       halfpipe-bind-temporary "^G" halfpipe-toggle-live-output _halfpipe_original_ctrl_g_binding
-      POSTDISPLAY=$(printf "\nPress ^g to live-execute the cached result of %s" "$_halfpipe_source_command")
+      POSTDISPLAY=$(printf "\nPress ^g to freeze up to the pipe left of cursor and live-execute the cached result of %s" "$_halfpipe_source_command")
     elif [ "$_halfpipe_activated" = "1" ]; then
       local preview_output=''
 
