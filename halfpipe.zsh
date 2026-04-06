@@ -124,6 +124,23 @@ eval \"\$1\"" _ "$command_text" 2>&1
   }
   halfpipe-reset
 
+  halfpipe-deactivate-preview() {
+    local restored_buffer="$PREDISPLAY$BUFFER"
+    local restored_cursor=$((CURSOR + ${#PREDISPLAY}))
+
+    typeset -gi _halfpipe_activated=0
+    typeset -g _halfpipe_cached_source_output=''
+    typeset -g _halfpipe_source_command=''
+    typeset -g _halfpipe_preview_command=''
+    halfpipe-restore-binding "^X^G" halfpipe-refresh-source-output _halfpipe_original_refresh_binding
+    BUFFER="$restored_buffer"
+    CURSOR="$restored_cursor"
+    POSTDISPLAY=''
+    PREDISPLAY=''
+    region_highlight=("")
+    halfpipe-react-to-keypress
+  }
+
   halfpipe-refresh-source-output() {
     [ "$_halfpipe_activated" = "1" ] || return
 
@@ -133,7 +150,7 @@ eval \"\$1\"" _ "$command_text" 2>&1
 
   halfpipe-toggle-live-output() {
     if [ "$_halfpipe_activated" = "1" ]; then
-      halfpipe-reset
+      halfpipe-deactivate-preview
       return
     fi
 
@@ -187,7 +204,7 @@ eval \"\$1\"" _ "$command_text" 2>&1
     forward-char vi-forward-char vi-find-next-char vi-find-next-char-skip vi-find-prev-char vi-find-prev-char-skip \
     vi-first-non-blank vi-forward-word forward-word emacs-forward-word vi-forward-word-end vi-goto-column \
     vi-goto-mark vi-goto-mark-line vi-repeat-find vi-rev-repeat-find read-command; do
-    eval "$cmd() { zle .$cmd ; halfpipe-react-to-movement } ; zle -N $cmd"
+    eval "$cmd() { zle .$cmd ; if [ \"\$_halfpipe_activated\" = \"1\" ]; then halfpipe-react-to-movement; else halfpipe-react-to-keypress; fi } ; zle -N $cmd"
   done
 
   for cmd in accept-line; do
