@@ -194,14 +194,27 @@ test_toggle_off_resets_preview_state() {
   test::load_plugin
 
   BUFFER=$'printf \'foo\\nbar\\n\' | grep bar'
+  CURSOR=${#BUFFER}
   halfpipe-toggle-live-output
   halfpipe-toggle-live-output
 
   test::assert_eq "second toggle disables preview" "0" "$_halfpipe_activated"
   test::assert_eq "second toggle restores original pipeline" $'printf \'foo\\nbar\\n\' | grep bar' "$BUFFER"
+  test::assert_eq "second toggle restores original cursor position" "${#BUFFER}" "$CURSOR"
   test::assert_eq "second toggle clears predisplay" "" "$PREDISPLAY"
   test::assert_eq "second toggle keeps ctrl-g bound to preview toggle" "halfpipe-toggle-live-output" "${__bindkey_bindings[^G]}"
   test::assert_contains "second toggle restores inactive preview hint" "$POSTDISPLAY" "Press ^g to freeze up to the pipe left of cursor"
+}
+
+test_toggle_translates_cursor_into_preview_coordinates() {
+  test::load_plugin
+
+  BUFFER=$'printf \'alpha\\nbeta\\n\' | grep a | grep -c .'
+  CURSOR=${#BUFFER}
+  halfpipe-toggle-live-output
+
+  test::assert_eq "toggle moves cursor to end of preview buffer" "${#BUFFER}" "$CURSOR"
+  test::assert_eq "toggle keeps cursor at the same logical command position" "8" "$CURSOR"
 }
 
 test_toggle_off_can_refreeze_from_a_different_segment() {
@@ -226,6 +239,7 @@ test_toggle_off_can_refreeze_from_a_different_segment() {
   test::assert_eq "refreeze keeps preview active" "1" "$_halfpipe_activated"
   test::assert_eq "refreeze uses the new cursor segment as freeze point" $'printf \'alpha\\nbeta\\n\' | ' "$PREDISPLAY"
   test::assert_eq "refreeze keeps remaining stages editable" "grep a | grep -c ." "$BUFFER"
+  test::assert_eq "refreeze translates cursor for the new editable suffix" "5" "$CURSOR"
   test::assert_eq "refreeze renders output for the new split" $'\n2' "$POSTDISPLAY"
   test::assert_array_eq "refreeze does not restore the original ctrl-g binding between toggles" expected_bindkey_calls __bindkey_set_calls
 }

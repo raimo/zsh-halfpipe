@@ -149,6 +149,9 @@ eval \"\$1\"" _ "$command_text" 2>&1
   }
 
   halfpipe-toggle-live-output() {
+    local original_cursor="$CURSOR"
+    local preview_cursor=0
+
     if [ "$_halfpipe_activated" = "1" ]; then
       halfpipe-deactivate-preview
       return
@@ -163,6 +166,13 @@ eval \"\$1\"" _ "$command_text" 2>&1
     halfpipe-capture-command-output "$_halfpipe_source_command" _halfpipe_cached_source_output
     PREDISPLAY=$(printf "%s | " "$_halfpipe_source_command")
     BUFFER="$_halfpipe_preview_command"
+    preview_cursor=$((original_cursor - ${#PREDISPLAY}))
+    if [ "$preview_cursor" -lt 0 ]; then
+      preview_cursor=0
+    elif [ "$preview_cursor" -gt "${#BUFFER}" ]; then
+      preview_cursor=${#BUFFER}
+    fi
+    CURSOR="$preview_cursor"
     halfpipe-bind-temporary "^X^G" halfpipe-refresh-source-output _halfpipe_original_refresh_binding
     halfpipe-react-to-keypress
   }
