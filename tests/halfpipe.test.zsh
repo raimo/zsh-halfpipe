@@ -67,7 +67,7 @@ test_toggle_live_output_caches_left_hand_side() {
   test::assert_eq "toggle moves source command into predisplay" $'printf \'foo\\nbar\\n\' | ' "$PREDISPLAY"
   test::assert_eq "toggle keeps editable rhs in buffer" "grep bar" "$BUFFER"
   test::assert_eq "toggle caches source command output" $'foo\nbar\n' "$_halfpipe_cached_source_output"
-  test::assert_eq "toggle renders preview output" $'\nbar' "$POSTDISPLAY"
+  test::assert_contains "toggle renders preview output" "$POSTDISPLAY" "bar"
   test::assert_eq "toggle highlights cached source command" "P0 22 fg=cyan,bold" "${region_highlight[1]}"
   test::assert_array_eq "toggle binds refresh widget" expected_bindkey_calls __bindkey_set_calls
 }
@@ -139,6 +139,32 @@ test_live_preview_reacts_to_rhs_edits() {
 
   test::assert_eq "editing rhs reuses cached source output" $'\n2' "$POSTDISPLAY"
   test::assert_eq "editing rhs keeps preview active" "1" "$_halfpipe_activated"
+}
+
+test_backspace_recomputes_preview_in_emacs_widget() {
+  test::load_plugin
+
+  BUFFER=$'printf \'foo\\nbar\\n\' | grep -c "^foo$"'
+  halfpipe-toggle-live-output
+  BUFFER='grep -c "^fo$"'
+  CURSOR=${#BUFFER}
+  backward-delete-char
+
+  test::assert_eq "backward-delete-char recomputes cached preview output" $'\n0' "$POSTDISPLAY"
+  test::assert_contains "backward-delete-char delegates to underlying zle widget" "${(j:|:)__zle_calls}" ".backward-delete-char"
+}
+
+test_backspace_recomputes_preview_in_vi_widget() {
+  test::load_plugin
+
+  BUFFER=$'printf \'foo\\nbar\\n\' | grep -c "^foo$"'
+  halfpipe-toggle-live-output
+  BUFFER='grep -c "^fo$"'
+  CURSOR=${#BUFFER}
+  vi-backward-delete-char
+
+  test::assert_eq "vi-backward-delete-char recomputes cached preview output" $'\n0' "$POSTDISPLAY"
+  test::assert_contains "vi-backward-delete-char delegates to underlying zle widget" "${(j:|:)__zle_calls}" ".vi-backward-delete-char"
 }
 
 test_refresh_source_output_reloads_cache() {

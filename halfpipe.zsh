@@ -205,7 +205,7 @@ eval \"\$1\"" _ "$command_text" 2>&1
     region_highlight=("P0 ${#PREDISPLAY} fg=cyan,bold")
   }
 
-  for cmd in backward-delete-char self-insert; do
+  for cmd in backward-delete-char vi-backward-delete-char self-insert; do
     eval "$cmd() { zle .$cmd ; halfpipe-react-to-keypress } ; zle -N $cmd"
   done
 

@@ -36,7 +36,7 @@ Type `git commit --allow-empty -m 'feat: add streaming output support'`
 Enter
 Type `git commit --allow-empty -m 'fix: off-by-one error in range calculation'`
 Enter
-Type `git commit --allow-empty -m 'chore: update dependencies'`
+Type `git commit --allow-empty -m 'fix: update dependencies'`
 Enter
 Type `git commit --allow-empty -m 'feat: implement retry logic for failed requests'`
 Enter
@@ -48,13 +48,13 @@ Type `git commit --allow-empty -m 'feat: add batch processing mode'`
 Enter
 Type `git commit --allow-empty -m 'fix: race condition in concurrent writes'`
 Enter
-Type `git commit --allow-empty -m 'refactor: extract auth middleware'`
+Type `git commit --allow-empty -m 'fix: extract auth middleware'`
 Enter
 Type `git commit --allow-empty -m 'feat: very demure, very mindful metrics endpoint'`
 Enter
 Type `git commit --allow-empty -m 'fix: incorrect timestamp formatting'`
 Enter
-Type `git commit --allow-empty -m 'test: add integration tests for parser'`
+Type `git commit --allow-empty -m 'fix: add integration tests for parser'`
 Enter
 Type `git commit --allow-empty -m 'fix: handle unicode in file paths'`
 Enter
@@ -82,13 +82,14 @@ Sleep 150ms
 
 # full command typed upfront — end of line means the last segment is editable
 Set TypingSpeed 20ms
-Type `git log --format=%s | grep -E "f[a]|:" | sed -E "s/feat/feat/" | tail -n 10`
+Type `git log --format=%s | grep -E "^f[e-i]" | sed -E "s/feat/feat/" | tail -n 10`
 Sleep 1200ms
 
 # freeze after the third pipe, then edit only the tail count
 Ctrl+G
 Sleep 800ms
 Backspace 1
+Sleep 1500ms
 Set TypingSpeed 30ms
 Type `3`
 Sleep 1200ms
@@ -105,19 +106,23 @@ Sleep 800ms
 Type `ure`
 Sleep 1200ms
 Backspace 3
-Sleep 1200ms
+Sleep 1500ms
 Ctrl+G
 Sleep 400ms
 
 # freeze at the grep segment and widen, then narrow, the matches
 Right 100
-Left 41
+Left 39
 Sleep 400ms
 Ctrl+G
 Sleep 800ms
-Type `e`
+Backspace 2
+Sleep 1200ms
+Type `i`
 Sleep 1200ms
 Backspace 1
+Sleep 1500ms
+Type `-i`
 Sleep 1200ms
 Ctrl+G
 Sleep 300ms
