@@ -17,6 +17,7 @@ Great for getting a regular expression right without executing the full pipeline
 - The upstream command is cached on activation and shown in cyan.
 - Press `Ctrl-X Ctrl-G` to re-run the upstream and refresh the cache.
 - Press `Ctrl-G` again to exit. Press `Enter` to run the final command normally.
+- Preview mode only live-executes explicitly allowlisted, stream-oriented commands. By default that list is `awk`, `sed`, `grep`, `head`, `tail`, `tr`, `cut`, `sort`, `uniq`, `wc`, `cat`, `nl`, `column`, and `jq`.
 
 ## How it works
 
@@ -24,6 +25,13 @@ Great for getting a regular expression right without executing the full pipeline
 - `Ctrl-G` is borrowed while a pipeline is on the command line and restored when you exit.
 - `Ctrl-X Ctrl-G` is bound while preview mode is active and released on exit.
 - Output is cached when you first activate preview. Use `Ctrl-X Ctrl-G` to refresh it.
+- Commands outside that allowlist are not executed in preview mode, even without globs. This avoids live-running `perl`, ad-hoc scripts, or destructive commands like `rm`.
+- If you want to allow additional preview commands, set `HALFPIPE_PREVIEW_COMMAND_ALLOWLIST` before sourcing the plugin.
+
+```zsh
+typeset -ga HALFPIPE_PREVIEW_COMMAND_ALLOWLIST=(awk sed grep head tail tr cut sort uniq wc cat nl column jq)
+source ~/.local/share/zsh-halfpipe/halfpipe.zsh
+```
 
 ## Installation
 

@@ -1,4 +1,10 @@
 function () {
+  halfpipe-initialize-command-allowlist() {
+    if (( ! ${+HALFPIPE_PREVIEW_COMMAND_ALLOWLIST} )); then
+      typeset -ga HALFPIPE_PREVIEW_COMMAND_ALLOWLIST=(awk sed grep head tail tr cut sort uniq wc cat nl column jq)
+    fi
+  }
+
   halfpipe-bind-temporary() {
     local key_sequence="$1"
     local widget_name="$2"
@@ -49,6 +55,62 @@ function () {
     prolog="$(halfpipe-shell-prolog)"
     command zsh -fc "$prolog
 eval \"\$1\"" _ "$command_text" 2>&1
+  }
+
+  halfpipe-preview-command-name() {
+    local command_text="$1"
+    local -a tokens
+    local token=''
+
+    tokens=(${(z)command_text})
+
+    for token in "${tokens[@]}"; do
+      [[ "$token" == [A-Za-z_][A-Za-z0-9_]*=* ]] && continue
+
+      case "$token" in
+        command|builtin|noglob|sudo|env|time)
+          continue
+          ;;
+      esac
+
+      print -r -- "$token"
+      return 0
+    done
+
+    return 1
+  }
+
+  halfpipe-preview-first-disallowed-command() {
+    local command_text="$1"
+    local -a tokens
+    local -a segment_tokens
+    local token=''
+    local segment_text=''
+    local command_name=''
+
+    halfpipe-initialize-command-allowlist
+    tokens=(${(z)command_text})
+
+    for token in "${tokens[@]}"; do
+      if [ "$token" = "|" ]; then
+        segment_text="${(j: :)segment_tokens}"
+        command_name="$(halfpipe-preview-command-name "$segment_text")" || return 0
+        if ! (( ${HALFPIPE_PREVIEW_COMMAND_ALLOWLIST[(Ie)$command_name]} )); then
+          print -r -- "$command_name"
+          return 0
+        fi
+        segment_tokens=()
+        continue
+      fi
+
+      segment_tokens+=("$token")
+    done
+
+    segment_text="${(j: :)segment_tokens}"
+    command_name="$(halfpipe-preview-command-name "$segment_text")" || return 0
+    if ! (( ${HALFPIPE_PREVIEW_COMMAND_ALLOWLIST[(Ie)$command_name]} )); then
+      print -r -- "$command_name"
+    fi
   }
 
   halfpipe-parse-buffer() {
@@ -123,6 +185,7 @@ eval \"\$1\"" _ "$command_text" 2>&1
     region_highlight=("")
   }
   halfpipe-reset
+  halfpipe-initialize-command-allowlist
 
   halfpipe-deactivate-preview() {
     local restored_buffer="$PREDISPLAY$BUFFER"
@@ -188,14 +251,20 @@ eval \"\$1\"" _ "$command_text" 2>&1
       POSTDISPLAY=$(printf "\nPress ^g to freeze up to the pipe left of cursor and live-execute the cached result of %s" "$_halfpipe_source_command")
     elif [ "$_halfpipe_activated" = "1" ]; then
       local preview_output=''
+      local blocked_command=''
 
-      IFS= read -r -d $'\0' preview_output < <(
-        {
-          printf '%s' "$_halfpipe_cached_source_output" | halfpipe-run-in-subshell "$BUFFER"
-          printf '\0'
-        }
-      )
-      POSTDISPLAY=$(printf "\n%s" "$preview_output")
+      blocked_command="$(halfpipe-preview-first-disallowed-command "$BUFFER")"
+      if [ -n "$blocked_command" ]; then
+        POSTDISPLAY=$(printf "\nPreview skipped: %s is not in HALFPIPE_PREVIEW_COMMAND_ALLOWLIST. Only explicitly allowlisted preview commands are live-executed." "$blocked_command")
+      else
+        IFS= read -r -d $'\0' preview_output < <(
+          {
+            printf '%s' "$_halfpipe_cached_source_output" | halfpipe-run-in-subshell "$BUFFER"
+            printf '\0'
+          }
+        )
+        POSTDISPLAY=$(printf "\n%s" "$preview_output")
+      fi
     fi
 
     halfpipe-react-to-movement

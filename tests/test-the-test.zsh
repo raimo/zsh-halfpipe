@@ -63,6 +63,21 @@ run_mutant \
   's/prolog="\$\(halfpipe-shell-prolog\)"/prolog=""/' \
   'not ok - alias-backed source command is available in preview shell'
 
+run_mutant \
+  "command allowlist bypass mutant is caught" \
+  's/blocked_command="\$\(halfpipe-preview-first-disallowed-command "\$BUFFER"\)"/blocked_command=""/' \
+  'not ok - unallowlisted preview does not execute'
+
+run_mutant \
+  "default command allowlist mutant is caught" \
+  's/HALFPIPE_PREVIEW_COMMAND_ALLOWLIST=\(awk sed grep head tail tr cut sort uniq wc cat nl column jq\)/HALFPIPE_PREVIEW_COMMAND_ALLOWLIST=(awk sed head tail tr cut sort uniq wc cat nl column jq)/' \
+  'not ok - default command allowlist still executes grep previews'
+
+run_mutant \
+  "later pipeline segment allowlist mutant is caught" \
+  's/segment_tokens=\(\)\n        continue/segment_tokens=()\n        break/' \
+  'not ok - unallowlisted later rhs pipeline command is skipped'
+
 print -r -- ""
 print -r -- "mutants run: $mutants_run"
 print -r -- "mutants failed: $mutants_failed"

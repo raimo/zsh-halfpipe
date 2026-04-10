@@ -1,5 +1,87 @@
 emulate -L zsh
 
+test_preview_blocks_unallowlisted_command() {
+  local preview_side_effect_file=''
+
+  unset HALFPIPE_PREVIEW_COMMAND_ALLOWLIST
+  unfunction dangerous_preview 2>/dev/null
+  test::load_plugin
+
+  preview_side_effect_file=$(mktemp "${TMPDIR:-/tmp}/halfpipe-preview-blocked.XXXXXX")
+  eval "dangerous_preview() { print -r -- ran >> ${(qqq)preview_side_effect_file}; }"
+  BUFFER=$'printf \'foo\\n\' | dangerous_preview'
+  halfpipe-toggle-live-output
+
+  test::assert_eq "unallowlisted preview does not execute" "" "$(cat "$preview_side_effect_file")"
+  test::assert_contains "unallowlisted preview explains the skip" "$POSTDISPLAY" "Preview skipped: dangerous_preview is not in HALFPIPE_PREVIEW_COMMAND_ALLOWLIST"
+  unfunction dangerous_preview 2>/dev/null
+  rm -f "$preview_side_effect_file"
+}
+
+test_preview_blocks_unallowlisted_perl_command() {
+  test::load_plugin
+
+  BUFFER=$'printf \'foo\\n\' | perl -ne \'print\''
+  halfpipe-toggle-live-output
+
+  test::assert_contains "perl preview is skipped even without globs" "$POSTDISPLAY" "Preview skipped: perl is not in HALFPIPE_PREVIEW_COMMAND_ALLOWLIST"
+}
+
+test_preview_blocks_unallowlisted_first_command_in_rhs_pipeline() {
+  test::load_plugin
+
+  BUFFER=$'git log --format=%s | gsed -E "s/^(.*):/[ \\1 ]:\\t/"'
+  halfpipe-toggle-live-output
+
+  test::assert_contains "unallowlisted first rhs pipeline command is skipped" "$POSTDISPLAY" "Preview skipped: gsed is not in HALFPIPE_PREVIEW_COMMAND_ALLOWLIST"
+}
+
+test_preview_blocks_unallowlisted_later_command_in_rhs_pipeline() {
+  test::load_plugin
+
+  BUFFER=$'printf \'foo\\n\' | sed -E "s/foo/bar/" | rm'
+  CURSOR=22
+  halfpipe-toggle-live-output
+
+  test::assert_contains "unallowlisted later rhs pipeline command is skipped" "$POSTDISPLAY" "Preview skipped: rm is not in HALFPIPE_PREVIEW_COMMAND_ALLOWLIST"
+}
+
+test_preview_allows_default_command_allowlist_commands() {
+  local preview_side_effect_file=''
+
+  unset HALFPIPE_PREVIEW_COMMAND_ALLOWLIST
+  unfunction grep 2>/dev/null
+  test::load_plugin
+
+  preview_side_effect_file=$(mktemp "${TMPDIR:-/tmp}/halfpipe-preview-allowed.XXXXXX")
+  eval "grep() { print -r -- ran >> ${(qqq)preview_side_effect_file}; command grep \"\$@\"; }"
+  BUFFER=$'printf \'foo\\n\' | grep foo'
+  halfpipe-toggle-live-output
+
+  test::assert_eq "default command allowlist still executes grep previews" "ran" "$(cat "$preview_side_effect_file")"
+  test::assert_not_eq "default command allowlist does not show the skip warning" $'\nPreview skipped: grep is not in HALFPIPE_PREVIEW_COMMAND_ALLOWLIST. Only explicitly allowlisted preview commands are live-executed.' "$POSTDISPLAY"
+  unfunction grep 2>/dev/null
+  rm -f "$preview_side_effect_file"
+}
+
+test_preview_command_allowlist_is_overrideable() {
+  local preview_side_effect_file=''
+
+  HALFPIPE_PREVIEW_COMMAND_ALLOWLIST=(dangerous_preview)
+  unfunction dangerous_preview 2>/dev/null
+  test::load_plugin
+
+  preview_side_effect_file=$(mktemp "${TMPDIR:-/tmp}/halfpipe-preview-override.XXXXXX")
+  eval "dangerous_preview() { print -r -- ran >> ${(qqq)preview_side_effect_file}; }"
+  BUFFER=$'printf \'foo\\n\' | dangerous_preview'
+  halfpipe-toggle-live-output
+
+  test::assert_eq "custom command allowlist executes matching previews" "ran" "$(cat "$preview_side_effect_file")"
+  unfunction dangerous_preview 2>/dev/null
+  unset HALFPIPE_PREVIEW_COMMAND_ALLOWLIST
+  rm -f "$preview_side_effect_file"
+}
+
 test_reset_restores_full_buffer() {
   test::load_plugin
 
@@ -188,7 +270,7 @@ test_aliases_work_in_source_and_preview_commands() {
   halfpipe-toggle-live-output
 
   test::assert_eq "alias-backed source command is available in preview shell" $'foo\nbar\n' "$_halfpipe_cached_source_output"
-  test::assert_eq "alias-backed preview command is available in preview shell" $'\n2' "$POSTDISPLAY"
+  test::assert_contains "alias-backed preview command is skipped unless allowlisted" "$POSTDISPLAY" "Preview skipped: preview_filter_alias is not in HALFPIPE_PREVIEW_COMMAND_ALLOWLIST"
 }
 
 test_functions_work_in_source_and_preview_commands() {
@@ -200,7 +282,7 @@ test_functions_work_in_source_and_preview_commands() {
   halfpipe-toggle-live-output
 
   test::assert_eq "function-backed source command is available in preview shell" $'foo\nbar\n' "$_halfpipe_cached_source_output"
-  test::assert_eq "function-backed preview command is available in preview shell" $'\n2' "$POSTDISPLAY"
+  test::assert_contains "function-backed preview command is skipped unless allowlisted" "$POSTDISPLAY" "Preview skipped: preview_filter_fn is not in HALFPIPE_PREVIEW_COMMAND_ALLOWLIST"
 }
 
 test_refresh_uses_updated_function_definitions() {
