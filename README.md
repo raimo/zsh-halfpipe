@@ -95,3 +95,9 @@ zsh tests/test-the-test.zsh
 ```
 
 The repo intentionally keeps the implementation in a single file so it can be sourced directly by shell plugin managers.
+
+## Disclaimer and AI use
+
+This software is provided as-is, without warranty of any kind, and you use it at your own risk. By using it, you accept full responsibility for reviewing what it does in your environment; the author disclaims liability for any loss, damage, or disruption resulting from its use. See [LICENSE](LICENSE) for the full license terms.
+
+Core logic for this tool was created by a human and has been used daily in real workflows. AI was used to improve test coverage, help with documentation, and fix corner cases revealed by the test harness; it was not the origin of the core interaction design or primary implementation logic.
