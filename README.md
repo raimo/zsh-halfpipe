@@ -1,6 +1,10 @@
 # zsh-halfpipe
 
-Press `Ctrl-G` on any pipeline and the output updates live as you edit the last command.
+Edit the downstream side of a shell pipeline and see its output update live, without re-running the upstream side.
+
+`zsh-halfpipe` lets you iterate on filters, regexes, and other pipeline stages in place by pressing `Ctrl-G`.
+
+![zsh-halfpipe demo](demo/demo.gif)
 
 ```zsh
 git log --oneline | grep -E "fix"
