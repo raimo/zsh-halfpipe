@@ -76,7 +76,11 @@ zinit light raimo/zsh-halfpipe
 antigen bundle raimo/zsh-halfpipe
 ```
 
-#### Any other manager that can source a single .zsh file should work too (the repo is deliberately kept to one file for this reason).
+#### Any other manager that can source a root-level `.plugin.zsh` file should work too.
+
+The repo keeps the implementation in `halfpipe.zsh` and exposes a root-level
+`zsh-halfpipe.plugin.zsh` entrypoint for Oh My Zsh and other plugin managers
+that auto-detect `*.plugin.zsh` files.
 
 ## Uninstallation
 
